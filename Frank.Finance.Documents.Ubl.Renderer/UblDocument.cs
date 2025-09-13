@@ -2,6 +2,7 @@
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents;
+using Frank.Finance.Documents.Ubl.Invoice;
 using System.Globalization;
 
 namespace Frank.Finance.Documents.Ubl.Renderer;
@@ -51,300 +52,34 @@ public class UblDocument(RenderContext context) : IDocument
 
     private void ComposeContent(IContainer container)
     {
-        container
-            .Column(column =>
-            {
-                column.Item().Element(ComposeThreeColumnHeader); // Content 1: Three columns (Supplier, Customer/Delivery, Invoice/Payment details)
-                column.Item().Element(ComposeNotesSection); // Content 2: Notes and description
-                column.Item().Element(ComposeTotalsSection); // Content 3: Totals from header and taxes/VAT
-                column.Item().Element(ComposeLineItemsTable); // Content 4: Table of lines
-                column.Item().Element(ComposeSummarySection); // Content 5: Summaries and control sums
+        if (context.Invoice == null) return;
+        container.Column(col => {
+            col.Item().Element(ComposeThreeColumnHeader);
+            col.Item().Element(ComposeNotesSection);
+            col.Item().Element(ComposeTotalsSection);
+            col.Item().Element(ComposeLineItemsTable);
+            col.Item().Element(ComposeSummarySection);
             });
     }
 
     private void ComposeThreeColumnHeader(IContainer container)
     {
-        container
-            .Row(row =>
-            {
-                // Supplier Column
-                row.RelativeItem(1).Element(container =>
-                {
-                    container.Column(column =>
-                    {
-                        column.Item().SectionHeading("SUPPLIER");
-                        column.Item().Element(container => ComposePartyInfo(container, context.Invoice?.AccountingSupplierParty?.Party));
-                    });
-                });
-
-                // Customer/Delivery Column
-                row.RelativeItem(1).Element(container =>
-                {
-                    container.Column(column =>
-                    {
-                        column.Item().SectionHeading("CUSTOMER");
-                        column.Item().Element(container => ComposePartyInfo(container, context.Invoice?.AccountingCustomerParty?.Party));
-                    });
-                });
-
-                // Invoice/Payment Details Column
-                row.RelativeItem(1).Element(container =>
-                {
-                    container.Column(column =>
-                    {
-                        column.Item().SectionHeading("INVOICE DETAILS");
-                        column.Item().Element(ComposeInvoiceDetails);
-                    });
-                });
-            });
+        container.ThreeCol(
+            col => col.SectionHeading("SUPPLIER").Party(context.Invoice?.AccountingSupplierParty?.Party),
+            col => col.SectionHeading("CUSTOMER").Party(context.Invoice?.AccountingCustomerParty?.Party),
+            col => col.SectionHeading("INVOICE DETAILS").InvoiceDetails(context.Invoice!)
+        );
     }
 
-    private void ComposePartyInfo(IContainer container, PartyType? party)
-    {
-        if (party == null) return;
 
-        container
-            .Column(column =>
-            {
-                // Party Name
-                if (party.PartyName?.Count > 0 && party.PartyName[0]?.Name?.Value != null)
-                {
-                    column.Item().Text(party.PartyName[0].Name.Value).Bold();
-                }
+    private void ComposeNotesSection(IContainer container) => container.SectionHeading("NOTES").Notes(context.Invoice!);
+    private void ComposeTotalsSection(IContainer container) => container.SectionHeading("TOTALS").Totals(context.Invoice!);
 
-                // Party ID
-                if (party.PartyIdentification?.Count > 0)
-                {
-                    foreach (var id in party.PartyIdentification)
-                    {
-                        column.Item().Component(new MonospaceField("Party ID", id.Id?.Value));
-                    }
-                }
+    private void ComposeLineItemsTable(IContainer container) => container.SectionHeading("LINE ITEMS").InvoiceTable(context.Invoice!, context);
 
-                // Address
-                if (party.PostalAddress != null)
-                {
-                    column.Item().Element(container => ComposeAddress(container, party.PostalAddress));
-                }
 
-                // Contact
-                if (party.Contact != null)
-                {
-                    column.Item().Component(new TextField("Contact Name", party.Contact.Name?.Value));
-                    column.Item().Component(new MonospaceField("Telephone", party.Contact.Telephone?.Value));
-                    column.Item().Component(new MonospaceField("Email", party.Contact.ElectronicMail?.Value));
-                }
-            });
-    }
 
-    private void ComposeAddress(IContainer container, AddressType? address)
-    {
-        if (address == null) return;
-
-        container
-            .Column(column =>
-            {
-                if (address.StreetName?.Value != null)
-                    column.Item().Text(address.StreetName.Value);
-
-                if (address.AdditionalStreetName?.Value != null)
-                    column.Item().Text(address.AdditionalStreetName.Value);
-
-                if (address.BuildingNumber?.Value != null)
-                    column.Item().Text(address.BuildingNumber.Value);
-
-                if (address.CityName?.Value != null)
-                    column.Item().Text(address.CityName.Value);
-
-                if (address.PostalZone?.Value != null)
-                    column.Item().Text(address.PostalZone.Value);
-
-                if (address.Country?.IdentificationCode?.Value != null)
-                    column.Item().Text(address.Country.IdentificationCode.Value);
-            });
-    }
-
-    private void ComposeInvoiceDetails(IContainer container)
-    {
-        if (context.Invoice == null) return;
-
-        container
-            .Column(column =>
-            {
-                column.Item().Component(new MonospaceField("Invoice Number", context.Invoice.Id?.Value));
-                column.Item().Component(new DateField("Issue Date", context.Invoice.IssueDate?.Value));
-                column.Item().Component(new DateField("Due Date", context.Invoice.DueDate?.Value));
-
-                if (context.Invoice.PaymentTerms?.Count > 0)
-                {
-                    foreach (var term in context.Invoice.PaymentTerms)
-                    {
-                        if (term.Note?.Count > 0)
-                        {
-                            foreach (var note in term.Note)
-                            {
-                                column.Item().Component(new TextField("Payment Terms", note.Value));
-                            }
-                        }
-                    }
-                }
-
-                column.Item().Component(new MonospaceField("Currency", context.Invoice.DocumentCurrencyCode?.Value));
-            });
-    }
-
-    private void ComposeNotesSection(IContainer container)
-    {
-        if (context.Invoice?.Note?.Count == 0) return;
-
-        container
-            .SectionHeading("NOTES")
-            .SectionContent(column =>
-            {
-                if (context.Invoice?.Note != null)
-                {
-                    foreach (var note in context.Invoice.Note)
-                    {
-                        column.Item().Text(note.Value);
-                    }
-                }
-            });
-    }
-
-    private void ComposeTotalsSection(IContainer container)
-    {
-        if (context.Invoice == null) return;
-
-        container
-            .SectionHeading("TOTALS")
-            .SectionContent(column =>
-            {
-                column.Item().Component(new MoneyField("Line Extension Amount", context.Invoice.LegalMonetaryTotal?.LineExtensionAmount?.Value, context.Invoice.DocumentCurrencyCode?.Value));
-                column.Item().Component(new MoneyField("Tax Exclusive Amount", context.Invoice.LegalMonetaryTotal?.TaxExclusiveAmount?.Value, context.Invoice.DocumentCurrencyCode?.Value));
-                column.Item().Component(new MoneyField("Tax Inclusive Amount", context.Invoice.LegalMonetaryTotal?.TaxInclusiveAmount?.Value, context.Invoice.DocumentCurrencyCode?.Value));
-                column.Item().Component(new MoneyField("Payable Amount", context.Invoice.LegalMonetaryTotal?.PayableAmount?.Value, context.Invoice.DocumentCurrencyCode?.Value));
-
-                if (context.Invoice.TaxTotal?.Count > 0)
-                {
-                    foreach (var taxTotal in context.Invoice.TaxTotal)
-                    {
-                        column.Item().Component(new MoneyField("Tax Amount", taxTotal.TaxAmount?.Value, context.Invoice.DocumentCurrencyCode?.Value));
-                    }
-                }
-            });
-    }
-
-    private void ComposeLineItemsTable(IContainer container)
-    {
-        if (context.Invoice?.InvoiceLine == null || context.Invoice.InvoiceLine.Count == 0)
-        {
-            container.Text("No line items available").FontColor(Colors.Grey.Medium);
-            return;
-        }
-
-        container
-            .SectionHeading("LINE ITEMS")
-            .SectionContent(column =>
-            {
-
-                column.Item().Table(table =>
-                {
-                    // Define columns to match the image layout
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.RelativeColumn(0.5f);  // # (Number)
-                        columns.RelativeColumn(1.5f);  // Artikkelnummer (Article Number)
-                        columns.RelativeColumn(4.0f);  // Beskrivelse (Description) - Main content column
-                        columns.RelativeColumn(1.0f);  // Enhetspris (Unit Price)
-                        columns.RelativeColumn(1.0f);  // Antall Enhet (Quantity Unit)
-                        columns.RelativeColumn(1.0f);  // Mva (VAT Amount)
-                        columns.RelativeColumn(1.0f);  // Netto (Net Total)
-                        columns.RelativeColumn(0.8f);  // Mva % (VAT Percentage)
-                    });
-
-                    // Header row
-                    table.Header(headerRow =>
-                    {
-                        headerRow.Cell().Element(HeaderCellStyle).AlignLeft().Text("#");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignLeft().Text("Artikkelnummer");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignLeft().Text("Beskrivelse");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignRight().Text("Enhetspris");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignRight().Text("Antall Enhet");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignRight().Text("Netto");
-                        headerRow.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva %");
-                    });
-
-                    // Data rows
-                    foreach (var (line, index) in context.Invoice.InvoiceLine.Select((line, index) => (line, index)))
-                    {
-                        AddLine(table, line, index + 1);
-                    }
-                });
-            });
-    }
-
-    private void AddLine(TableDescriptor table, InvoiceLineType line, int lineNumber)
-    {
-        var description = line.Item?.Description?.Count > 0 ? line.Item.Description[0]?.Value : "";
-        var articleNumber = line.Item?.SellersItemIdentification?.Id?.Value ?? "";
-        var unitCode = line.InvoicedQuantity?.UnitCode ?? "";
-        var quantity = line.InvoicedQuantity?.Value ?? 0;
-        var vatPercent = line.Item?.ClassifiedTaxCategory?.FirstOrDefault()?.Percent?.Value ?? 0;
-        var unitPrice = line.Price?.PriceAmount?.Value ?? 0;
-        var lineTotal = line.LineExtensionAmount?.Value ?? 0;
-        var vatAmount = lineTotal * (vatPercent / 100);
-
-        // Main line item row
-        table.Cell().Element(ItemCellStyle).AlignLeft().Text(lineNumber.ToString());
-        table.Cell().Element(ItemCellStyle).AlignLeft().Text(articleNumber);
-        table.Cell().Element(ItemCellStyle).AlignLeft().Text(description).Bold();
-        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(unitPrice, context.Invoice?.DocumentCurrencyCode?.Value));
-        table.Cell().Element(ItemCellStyle).AlignRight().Text($"{quantity:F2} {unitCode}");
-        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(vatAmount, context.Invoice?.DocumentCurrencyCode?.Value));
-        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(lineTotal, context.Invoice?.DocumentCurrencyCode?.Value));
-        table.Cell().Element(ItemCellStyle).AlignRight().Text($"{vatPercent:F2}%");
-
-        // Add expandable details row
-        table.Cell().ColumnSpan(8).Component(new LineDetailsComponent(line, context.Invoice?.DocumentCurrencyCode?.Value));
-        
-        // Add separator line
-        table.Cell().ColumnSpan(8).Element(ItemCellStyle).PaddingBottom(5).LineHorizontal(0.5f);
-    }
-
-    private static IContainer ItemCellStyle(IContainer container)
-        => container
-            .PaddingVertical(3)
-            .PaddingHorizontal(4);
-
-    private static IContainer HeaderCellStyle(IContainer container)
-        => container
-            .DefaultTextStyle(x => x.SemiBold())
-            .PaddingVertical(5)
-            .BorderBottom(1)
-            .BorderColor(Colors.Black);
-
-    private void ComposeSummarySection(IContainer container)
-    {
-        if (context.Invoice == null) return;
-
-        container
-            .SectionHeading("SUMMARY")
-            .SectionContent(column =>
-            {
-                column.Item().Component(new MonospaceField("Invoice Number", context.Invoice.Id?.Value));
-                column.Item().Component(new DateField("Issue Date", context.Invoice.IssueDate?.Value));
-                column.Item().Component(new TextField("Line Item Count", context.Invoice.InvoiceLine?.Count.ToString() ?? "0"));
-                
-                if (context.Invoice.AdditionalDocumentReference?.Count > 0)
-                {
-                    foreach (var docRef in context.Invoice.AdditionalDocumentReference)
-                    {
-                        column.Item().Component(new MonospaceField("Document Reference", docRef.Id?.Value));
-                    }
-                }
-            });
-    }
+    private void ComposeSummarySection(IContainer container) => container.SectionHeading("SUMMARY").Summary(context.Invoice!);
 
     private void ComposeFooter(IContainer container)
     {
@@ -476,75 +211,82 @@ public class MonospaceField(string label, string? value) : Field(label, value)
     }
 }
 
-// Micro-DSL extension methods
+// Comprehensive DSL extension methods
 public static class UblDocumentExtensions
 {
-    public static IContainer Field(this IContainer container, string label, string? value)
+    // Field DSL
+    public static IContainer Field(this IContainer container, string label, string? value) { container.Component(new TextField(label, value)); return container; }
+    public static IContainer Money(this IContainer container, string label, decimal? amount, string? currencyCode = null) { container.Component(new MoneyField(label, amount, currencyCode)); return container; }
+    public static IContainer Date(this IContainer container, string label, DateTime? date) { container.Component(new DateField(label, date)); return container; }
+    public static IContainer Mono(this IContainer container, string label, string? value) { container.Component(new MonospaceField(label, value)); return container; }
+    public static IContainer Percent(this IContainer container, string label, decimal? value) { container.Component(new PercentageField(label, value)); return container; }
+
+    // Section DSL
+    public static IContainer SectionHeading(this IContainer container, string title) { container.PaddingBottom(15).Text(title).Bold().Underline().FontColor(Colors.Blue.Darken2); return container; }
+    public static IContainer SectionContent(this IContainer container, Action<ColumnDescriptor> content) { container.PaddingBottom(10).Column(content); return container; }
+    public static IContainer Section(this IContainer container, string title, Action<ColumnDescriptor> content) { container.SectionHeading(title).SectionContent(content); return container; }
+
+    // Layout DSL
+    public static IContainer ThreeCol(this IContainer container, Action<IContainer> col1, Action<IContainer> col2, Action<IContainer> col3) { container.Row(row => { row.RelativeItem(1).Element(col1); row.RelativeItem(1).Element(col2); row.RelativeItem(1).Element(col3); }); return container; }
+    public static IContainer TwoCol(this IContainer container, Action<IContainer> left, Action<IContainer> right) { container.Row(row => { row.RelativeItem(1).Element(left); row.RelativeItem(1).Element(right); }); return container; }
+
+    // Party DSL
+    public static IContainer Party(this IContainer container, PartyType? party) { if (party != null) container.Column(col => { if (party.PartyName?.Count > 0) col.Item().Text(party.PartyName[0].Name.Value).Bold(); party.PartyIdentification?.ForEach(id => col.Item().Element(c => c.Mono("Party ID", id.Id?.Value))); if (party.PostalAddress != null) col.Item().Element(addr => addr.Address(party.PostalAddress)); if (party.Contact != null) { col.Item().Element(c => c.Field("Contact Name", party.Contact.Name?.Value)); col.Item().Element(c => c.Mono("Telephone", party.Contact.Telephone?.Value)); col.Item().Element(c => c.Mono("Email", party.Contact.ElectronicMail?.Value)); } }); return container; }
+
+    public static IContainer Address(this IContainer container, AddressType? address) { if (address != null) container.Column(col => { address.StreetName?.Value?.Let(v => col.Item().Text(v)); address.AdditionalStreetName?.Value?.Let(v => col.Item().Text(v)); address.BuildingNumber?.Value?.Let(v => col.Item().Text(v)); address.CityName?.Value?.Let(v => col.Item().Text(v)); address.PostalZone?.Value?.Let(v => col.Item().Text(v)); address.Country?.IdentificationCode?.Value?.Let(v => col.Item().Text(v)); }); return container; }
+
+    // Invoice DSL
+    public static IContainer InvoiceDetails(this IContainer container, InvoiceType invoice) { container.Column(col => { col.Item().Element(c => c.Mono("Invoice Number", invoice.Id?.Value)); col.Item().Element(c => c.Date("Issue Date", invoice.IssueDate?.Value)); col.Item().Element(c => c.Date("Due Date", invoice.DueDate?.Value)); invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Element(c => c.Field("Payment Terms", note.Value)))); col.Item().Element(c => c.Mono("Currency", invoice.DocumentCurrencyCode?.Value)); }); return container; }
+
+    public static IContainer Totals(this IContainer container, InvoiceType invoice) { container.Column(col => { col.Item().Element(c => c.Money("Line Extension Amount", invoice.LegalMonetaryTotal?.LineExtensionAmount?.Value, invoice.DocumentCurrencyCode?.Value)); col.Item().Element(c => c.Money("Tax Exclusive Amount", invoice.LegalMonetaryTotal?.TaxExclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value)); col.Item().Element(c => c.Money("Tax Inclusive Amount", invoice.LegalMonetaryTotal?.TaxInclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value)); col.Item().Element(c => c.Money("Payable Amount", invoice.LegalMonetaryTotal?.PayableAmount?.Value, invoice.DocumentCurrencyCode?.Value)); invoice.TaxTotal?.ForEach(tax => col.Item().Element(c => c.Money("Tax Amount", tax.TaxAmount?.Value, invoice.DocumentCurrencyCode?.Value))); }); return container; }
+
+    public static IContainer Notes(this IContainer container, InvoiceType invoice) { if (invoice.Note?.Count > 0) container.Column(col => { invoice.Note.ForEach(note => col.Item().Text(note.Value)); }); return container; }
+
+    public static IContainer Summary(this IContainer container, InvoiceType invoice) { container.Column(col => { col.Item().Element(c => c.Mono("Invoice Number", invoice.Id?.Value)); col.Item().Element(c => c.Date("Issue Date", invoice.IssueDate?.Value)); col.Item().Element(c => c.Field("Line Item Count", invoice.InvoiceLine?.Count.ToString() ?? "0")); invoice.AdditionalDocumentReference?.ForEach(doc => col.Item().Element(c => c.Mono("Document Reference", doc.Id?.Value))); }); return container; }
+
+    // Table DSL
+    public static IContainer InvoiceTable(this IContainer container, InvoiceType invoice, RenderContext context) { if (invoice.InvoiceLine?.Count > 0) container.Column(col => { col.Item().Table(table => { table.ColumnsDefinition(columns => { columns.RelativeColumn(0.5f); columns.RelativeColumn(1.5f); columns.RelativeColumn(4.0f); columns.RelativeColumn(1.0f); columns.RelativeColumn(1.0f); columns.RelativeColumn(1.0f); columns.RelativeColumn(1.0f); columns.RelativeColumn(0.8f); }); table.Header(header => { header.Cell().Element(HeaderCellStyle).AlignLeft().Text("#"); header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Artikkelnummer"); header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Beskrivelse"); header.Cell().Element(HeaderCellStyle).AlignRight().Text("Enhetspris"); header.Cell().Element(HeaderCellStyle).AlignRight().Text("Antall Enhet"); header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva"); header.Cell().Element(HeaderCellStyle).AlignRight().Text("Netto"); header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva %"); }); invoice.InvoiceLine.ForEach((line, index) => table.AddLine(line, index + 1, context)); }); }); else container.Text("No line items available").FontColor(Colors.Grey.Medium); return container; }
+
+    // Table extensions
+    public static void AddLine(this TableDescriptor table, InvoiceLineType line, int lineNumber, RenderContext context)
     {
-        container.Component(new TextField(label, value));
-        return container;
+        var description = line.Item?.Description?.Count > 0 ? line.Item.Description[0]?.Value : "";
+        var articleNumber = line.Item?.SellersItemIdentification?.Id?.Value ?? "";
+        var unitCode = line.InvoicedQuantity?.UnitCode ?? "";
+        var quantity = line.InvoicedQuantity?.Value ?? 0;
+        var vatPercent = line.Item?.ClassifiedTaxCategory?.FirstOrDefault()?.Percent?.Value ?? 0;
+        var unitPrice = line.Price?.PriceAmount?.Value ?? 0;
+        var lineTotal = line.LineExtensionAmount?.Value ?? 0;
+        var vatAmount = lineTotal * (vatPercent / 100);
+
+        table.Cell().Element(ItemCellStyle).AlignLeft().Text(lineNumber.ToString());
+        table.Cell().Element(ItemCellStyle).AlignLeft().Text(articleNumber);
+        table.Cell().Element(ItemCellStyle).AlignLeft().Text(description).Bold();
+        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(unitPrice, context.Invoice?.DocumentCurrencyCode?.Value));
+        table.Cell().Element(ItemCellStyle).AlignRight().Text($"{quantity:F2} {unitCode}");
+        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(vatAmount, context.Invoice?.DocumentCurrencyCode?.Value));
+        table.Cell().Element(ItemCellStyle).AlignRight().Text(FormatCurrency(lineTotal, context.Invoice?.DocumentCurrencyCode?.Value));
+        table.Cell().Element(ItemCellStyle).AlignRight().Text($"{vatPercent:F2}%");
+        table.Cell().ColumnSpan(8).Component(new LineDetailsComponent(line, context.Invoice?.DocumentCurrencyCode?.Value));
+        table.Cell().ColumnSpan(8).Element(ItemCellStyle).PaddingBottom(5).LineHorizontal(0.5f);
     }
 
-    public static IContainer Money(this IContainer container, string label, decimal? amount, string? currencyCode = null)
-    {
-        container.Component(new MoneyField(label, amount, currencyCode));
-        return container;
-    }
+    // Style methods
+    public static IContainer ItemCellStyle(this IContainer container) => container.PaddingVertical(3).PaddingHorizontal(4);
+    public static IContainer HeaderCellStyle(this IContainer container) => container.DefaultTextStyle(x => x.SemiBold()).PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Black);
 
-    public static IContainer Section(this IContainer container, string title)
+    // Helper extensions
+    public static void ForEach<T>(this IEnumerable<T> items, Action<T> action) { foreach (var item in items) action(item); }
+    public static void ForEach<T>(this IEnumerable<T> items, Action<T, int> action) { var index = 0; foreach (var item in items) action(item, index++); }
+    public static void Let<T>(this T? value, Action<T> action) { if (value != null) action(value); }
+    
+    private static string FormatCurrency(decimal amount, string? currencyCode = null)
     {
-        container
-            .PaddingBottom(15)
-            .Text(title)
-            .Bold()
-            .FontColor(Colors.Blue.Darken2);
-        return container;
-    }
-
-    public static IContainer SectionHeading(this IContainer container, string title)
-    {
-        container
-            .PaddingBottom(15)
-            .Text(title)
-            .Bold()
-            .Underline()
-            .FontColor(Colors.Blue.Darken2);
-        return container;
-    }
-
-    public static IContainer SectionContent(this IContainer container, Action<ColumnDescriptor> content)
-    {
-        container
-            .PaddingBottom(10)
-            .Column(content);
-        return container;
-    }
-
-    public static IContainer TwoCol(this IContainer container, Action<IContainer> left, Action<IContainer> right)
-    {
-        container.Row(row =>
-        {
-            row.RelativeItem(1).Element(left);
-            row.RelativeItem(1).Element(right);
-        });
-        return container;
-    }
-
-    public static IContainer HCell(this IContainer container)
-    {
-        return container
-            .Border(1)
-            .BorderColor(Colors.Grey.Lighten2)
-            .Padding(8)
-            .Background(Colors.Grey.Lighten4);
-    }
-
-    public static IContainer Cell(this IContainer container)
-    {
-        return container
-            .Border(1)
-            .BorderColor(Colors.Grey.Lighten2)
-            .Padding(8);
+        var culture = CultureInfo.CurrentCulture;
+        var formatted = amount.ToString("C", culture);
+        if (!string.IsNullOrEmpty(currencyCode) && !formatted.Contains(currencyCode))
+            formatted = $"{currencyCode} {formatted}";
+        return formatted;
     }
 }
 
@@ -554,96 +296,26 @@ public class LineDetailsComponent(InvoiceLineType? line, string? currencyCode) :
     {
         if (line == null) return;
         
-        container
-            .Padding(5)
-            .Border(1)
-            .BorderColor(Colors.Grey.Lighten2)
-            .Background(Colors.Grey.Lighten4)
-            .Column(column =>
-            {
-                // Section header
-                column.Item().Text("See additional line properties").Bold().FontColor(Colors.Grey.Darken1);
-                
-                column.Item().Row(row =>
-                {
-                    // Left section - Item Details
-                    row.RelativeItem().Column(leftColumn =>
-                    {
-                        leftColumn.Item().Text("Item Details").Bold().FontColor(Colors.Blue.Darken2);
-                        
-                        // Sellers Item Identification
-                        if (line.Item?.SellersItemIdentification?.Id?.Value != null)
-                        {
-                            leftColumn.Item().Component(new TextField("SellersItemIdentification", line.Item.SellersItemIdentification.Id.Value));
-                        }
-                        
-                        // Standard Item Identification
-                        if (line.Item?.StandardItemIdentification?.Id?.Value != null)
-                        {
-                            leftColumn.Item().Component(new TextField("StandardItemIdentification", line.Item.StandardItemIdentification.Id.Value));
-                        }
-                        
-                        // Item Name
-                        if (line.Item?.Name?.Value != null)
-                        {
-                            leftColumn.Item().Component(new TextField("Item Name", line.Item.Name.Value));
-                        }
-                    });
-                    
-                    // Middle section - Period & References
-                    row.RelativeItem().Column(middleColumn =>
-                    {
-                        middleColumn.Item().Text("Period & References").Bold().FontColor(Colors.Blue.Darken2);
-                        
-                        // Invoice Period
-                        if (line.InvoicePeriod?.Count > 0)
-                        {
-                            foreach (var period in line.InvoicePeriod)
-                            {
-                                middleColumn.Item().Component(new DateField("Start Date", period.StartDate?.Value));
-                                middleColumn.Item().Component(new DateField("End Date", period.EndDate?.Value));
-                            }
-                        }
-                        
-                        // Document Reference
-                        if (line.DocumentReference?.Count > 0)
-                        {
-                            foreach (var docRef in line.DocumentReference)
-                            {
-                                middleColumn.Item().Component(new MonospaceField("Document ID", docRef.Id?.Value));
-                                middleColumn.Item().Component(new MonospaceField("Document Type", docRef.DocumentTypeCode?.Value));
-                            }
-                        }
-                    });
-                    
-                    // Right section - Tax & Charges
-                    row.RelativeItem().Column(rightColumn =>
-                    {
-                        rightColumn.Item().Text("Tax & Charges").Bold().FontColor(Colors.Blue.Darken2);
-                        
-                        // Classified Tax Category
-                        if (line.Item?.ClassifiedTaxCategory?.Count > 0)
-                        {
-                            foreach (var tax in line.Item.ClassifiedTaxCategory)
-                            {
-                                rightColumn.Item().Component(new MonospaceField("Tax ID", tax.Id?.Value));
-                                rightColumn.Item().Component(new PercentageField("Tax Rate", tax.Percent?.Value));
-                                rightColumn.Item().Component(new MonospaceField("Tax Scheme", tax.TaxScheme?.Id?.Value));
-                            }
-                        }
-                        
-                        // Allowance Charge
-                        if (line.AllowanceCharge?.Count > 0)
-                        {
-                            foreach (var allowance in line.AllowanceCharge)
-                            {
-                                rightColumn.Item().Component(new TextField("Charge Indicator", allowance.ChargeIndicator.ToString()));
-                                rightColumn.Item().Component(new MoneyField("Amount", allowance.Amount?.Value, currencyCode));
-                                rightColumn.Item().Component(new MoneyField("Base Amount", allowance.BaseAmount?.Value, currencyCode));
-                            }
-                        }
-                    });
+        container.Padding(5).Border(1).BorderColor(Colors.Grey.Lighten2).Background(Colors.Grey.Lighten4).Column(col => {
+            col.Item().Text("See additional line properties").Bold().FontColor(Colors.Grey.Darken1);
+            col.Item().Row(row => {
+                row.RelativeItem().Column(left => {
+                    left.Item().Text("Item Details").Bold().FontColor(Colors.Blue.Darken2);
+                    line.Item?.SellersItemIdentification?.Id?.Value?.Let(v => left.Item().Field("SellersItemIdentification", v));
+                    line.Item?.StandardItemIdentification?.Id?.Value?.Let(v => left.Item().Field("StandardItemIdentification", v));
+                    line.Item?.Name?.Value?.Let(v => left.Item().Field("Item Name", v));
+                });
+                row.RelativeItem().Column(middle => {
+                    middle.Item().Text("Period & References").Bold().FontColor(Colors.Blue.Darken2);
+                    line.InvoicePeriod?.ForEach(period => { middle.Item().Date("Start Date", period.StartDate?.Value); middle.Item().Date("End Date", period.EndDate?.Value); });
+                    line.DocumentReference?.ForEach(doc => { middle.Item().Mono("Document ID", doc.Id?.Value); middle.Item().Mono("Document Type", doc.DocumentTypeCode?.Value); });
+                });
+                row.RelativeItem().Column(right => {
+                    right.Item().Text("Tax & Charges").Bold().FontColor(Colors.Blue.Darken2);
+                    line.Item?.ClassifiedTaxCategory?.ForEach(tax => { right.Item().Mono("Tax ID", tax.Id?.Value); right.Item().Percent("Tax Rate", tax.Percent?.Value); right.Item().Mono("Tax Scheme", tax.TaxScheme?.Id?.Value); });
+                    line.AllowanceCharge?.ForEach(allowance => { right.Item().Field("Charge Indicator", allowance.ChargeIndicator.ToString()); right.Item().Money("Amount", allowance.Amount?.Value, currencyCode); right.Item().Money("Base Amount", allowance.BaseAmount?.Value, currencyCode); });
                 });
             });
+        });
     }
 }
