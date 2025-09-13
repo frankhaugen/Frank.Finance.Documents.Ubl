@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="QuestPDF" Version="2025.7.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Frank.Finance.Documents.Ubl\Frank.Finance.Documents.Ubl.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Norwegian-example-1.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Remove="HeaderLayout.png" />
+    </ItemGroup>
+
+</Project>

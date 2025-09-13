@@ -13,7 +13,7 @@ var rootDirectory = queryFile.Directory;
 var sourceDirectory = rootDirectory!.CreateSubdirectory("xsd")!.CreateSubdirectory("maindoc");
 var fileLog = new List<string>();
 var outputDirectory = new DirectoryInfo(Path.Combine(rootDirectory.FullName, "Frank.Finance.Documents.Ubl"));
-var generator = UblGenerator.CreateGenerator(rootDirectory, "Frank.Finance.Documents.Ubl", fileLog);
+var generator = UblGenerator.CreateGenerator(outputDirectory, "Frank.Finance.Documents.Ubl", fileLog);
 
 generator.Generate(sourceDirectory.EnumerateFiles().Select(x => x.FullName).ToList().Dump());
 
