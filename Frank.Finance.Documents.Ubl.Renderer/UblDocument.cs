@@ -1,7 +1,8 @@
-﻿using System.Globalization;
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using Frank.Finance.Documents.Ubl.Renderer.Models;
+using Frank.Finance.Documents.Ubl.Renderer.Extensions;
 
 namespace Frank.Finance.Documents.Ubl.Renderer;
 
@@ -78,13 +79,12 @@ public class UblDocument(RenderContext context) : IDocument
         });
     }
 
-
     private void ComposeNotesSection(IContainer container)
     {
         container.Column(col =>
         {
             col.Item().SectionHeading("NOTES");
-            col.Item().Notes(context.Invoice!).PaddingBottom(7);
+            col.Item().Notes(context.Invoice!);
         });
     }
 
@@ -93,7 +93,7 @@ public class UblDocument(RenderContext context) : IDocument
         container.Column(col =>
         {
             col.Item().SectionHeading("TOTALS");
-            col.Item().Totals(context.Invoice!).PaddingBottom(7);
+            col.Item().Totals(context.Invoice!);
         });
     }
 
@@ -102,7 +102,7 @@ public class UblDocument(RenderContext context) : IDocument
         container.Column(col =>
         {
             col.Item().SectionHeading("LINE ITEMS");
-            col.Item().InvoiceTable(context.Invoice!, context).PaddingBottom(7);
+            col.Item().InvoiceTable(context.Invoice!, context);
         });
     }
 
@@ -127,18 +127,4 @@ public class UblDocument(RenderContext context) : IDocument
                 x.TotalPages();
             });
     }
-
-    private string FormatCurrency(decimal amount, string? currencyCode = null)
-    {
-        var culture = CultureInfo.CurrentCulture;
-        var formatted = amount.ToString("C", culture);
-
-        if (!string.IsNullOrEmpty(currencyCode) && !formatted.Contains(currencyCode)) formatted = $"{currencyCode} {formatted}";
-
-        return formatted;
-    }
 }
-
-// Field component system for consistent label-value display
-
-// Comprehensive DSL extension methods

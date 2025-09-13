@@ -3,6 +3,7 @@
 using Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents;
 using Frank.Finance.Documents.Ubl.CommonBasicComponentsCommonBasicComponents;
 using Frank.Finance.Documents.Ubl.Invoice;
+using Frank.Finance.Documents.Ubl.Renderer.Models;
 using Frank.Finance.Documents.Ubl.Renderer;
 using QuestPDF.Companion;
 using QuestPDF.Infrastructure;
@@ -37,7 +38,7 @@ if (invoiceFromXml == null)
 Console.WriteLine($"Deserialized Invoice ID: {invoiceFromXml.Id?.Value}");
 var invoice = invoiceFromXml;
 
-var renderContext = new RenderContext(translator, Language.EN, invoice);
+var renderContext = new RenderContext(translator, Frank.Finance.Documents.Ubl.Renderer.Models.Language.EN, invoice);
 var ublDocument = new UblDocument(renderContext);
 
 await ublDocument.ShowInCompanionAsync();

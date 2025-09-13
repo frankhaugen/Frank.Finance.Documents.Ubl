@@ -1,8 +1,8 @@
-﻿using QuestPDF.Fluent;
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Frank.Finance.Documents.Ubl.Renderer;
+namespace Frank.Finance.Documents.Ubl.Renderer.Components.Fields;
 
 public class PercentageField(string label, decimal? percentage) : Field(label, percentage.HasValue ? FormatPercentage(percentage.Value) : null)
 {

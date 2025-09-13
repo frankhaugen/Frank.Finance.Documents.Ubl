@@ -1,9 +1,9 @@
-﻿using System.Globalization;
+using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Frank.Finance.Documents.Ubl.Renderer;
+namespace Frank.Finance.Documents.Ubl.Renderer.Components.Fields;
 
 public class DateField : Field
 {

@@ -1,6 +1,6 @@
-﻿using QuestPDF.Infrastructure;
+using QuestPDF.Infrastructure;
 
-namespace Frank.Finance.Documents.Ubl.Renderer;
+namespace Frank.Finance.Documents.Ubl.Renderer.Components.Fields;
 
 public abstract class Field(string label, string? value) : IComponent
 {

@@ -1,9 +1,11 @@
-﻿using Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents;
+using Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using Frank.Finance.Documents.Ubl.Renderer.Utilities;
+using Frank.Finance.Documents.Ubl.Renderer.Extensions;
 
-namespace Frank.Finance.Documents.Ubl.Renderer;
+namespace Frank.Finance.Documents.Ubl.Renderer.Components.Tables;
 
 public class LineDetailsComponent(InvoiceLineType? line, string? currencyCode) : IComponent
 {
