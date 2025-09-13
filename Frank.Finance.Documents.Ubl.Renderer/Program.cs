@@ -28,7 +28,12 @@ var xDocument = System.Xml.Linq.XDocument.Parse(norwegianXmlContent);
 // XML deserialization:
 var serializer = new System.Xml.Serialization.XmlSerializer(typeof(InvoiceType));
 using var reader = xDocument.CreateReader();
-var invoiceFromXml = (InvoiceType)serializer.Deserialize(reader);
+var invoiceFromXml = (InvoiceType?)serializer.Deserialize(reader);
+if (invoiceFromXml == null)
+{
+    Console.WriteLine("Failed to deserialize invoice from XML");
+    return;
+}
 Console.WriteLine($"Deserialized Invoice ID: {invoiceFromXml.Id?.Value}");
 var invoice = invoiceFromXml;
 

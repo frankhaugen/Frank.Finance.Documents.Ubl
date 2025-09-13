@@ -60,33 +60,61 @@ public class UblDocument(RenderContext context) : IDocument
 
     private void ComposeThreeColumnHeader(IContainer container)
     {
-        container.ThreeCol(
-            col => col.SectionHeading("SUPPLIER").Party(context.Invoice?.AccountingSupplierParty?.Party),
-            col => col.SectionHeading("CUSTOMER").Party(context.Invoice?.AccountingCustomerParty?.Party),
-            col => col.SectionHeading("INVOICE DETAILS").InvoiceDetails(context.Invoice!)
-        );
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(col => 
+            {
+                col.Item().SectionHeading("SUPPLIER");
+                col.Item().Party(context.Invoice?.AccountingSupplierParty?.Party);
+            });
+            row.RelativeItem().Column(col => 
+            {
+                col.Item().SectionHeading("CUSTOMER");
+                col.Item().Party(context.Invoice?.AccountingCustomerParty?.Party);
+            });
+            row.RelativeItem().Column(col => 
+            {
+                col.Item().SectionHeading("INVOICE DETAILS");
+                col.Item().InvoiceDetails(context.Invoice!);
+            });
+        });
     }
 
 
     private void ComposeNotesSection(IContainer container)
     {
-        container.SectionHeading("NOTES").Notes(context.Invoice!);
+        container.Column(col =>
+        {
+            col.Item().SectionHeading("NOTES");
+            col.Item().Notes(context.Invoice!).PaddingBottom(7);
+        });
     }
 
     private void ComposeTotalsSection(IContainer container)
     {
-        container.SectionHeading("TOTALS").Totals(context.Invoice!);
+        container.Column(col =>
+        {
+            col.Item().SectionHeading("TOTALS");
+            col.Item().Totals(context.Invoice!).PaddingBottom(7);
+        });
     }
 
     private void ComposeLineItemsTable(IContainer container)
     {
-        container.SectionHeading("LINE ITEMS").InvoiceTable(context.Invoice!, context);
+        container.Column(col =>
+        {
+            col.Item().SectionHeading("LINE ITEMS");
+            col.Item().InvoiceTable(context.Invoice!, context).PaddingBottom(7);
+        });
     }
-
 
     private void ComposeSummarySection(IContainer container)
     {
-        container.SectionHeading("SUMMARY").Summary(context.Invoice!);
+        container.Column(col =>
+        {
+            col.Item().SectionHeading("SUMMARY");
+            col.Item().Summary(context.Invoice!);
+        });
     }
 
     private void ComposeFooter(IContainer container)
@@ -254,7 +282,7 @@ public static class UblDocumentExtensions
     // Section DSL
     public static IContainer SectionHeading(this IContainer container, string title)
     {
-        container.PaddingBottom(15).Text(title).Bold().Underline().FontColor(Colors.Blue.Darken2);
+        container.Text(title).Bold().Underline().FontColor(Colors.Blue.Darken2);
         return container;
     }
 
@@ -296,24 +324,33 @@ public static class UblDocumentExtensions
     public static IContainer Party(this IContainer container, PartyType? party)
     {
         if (party != null)
+        {
             container.Column(col =>
             {
-                if (party.PartyName?.Count > 0) col.Item().Text(party.PartyName[0].Name.Value).Bold();
-                party.PartyIdentification?.ForEach(id => col.Item().Element(c => c.Mono("Party ID", id.Id?.Value)));
-                if (party.PostalAddress != null) col.Item().Element(addr => addr.Address(party.PostalAddress));
+                if (party.PartyName?.Count > 0) 
+                    col.Item().Text(party.PartyName[0].Name.Value).Bold();
+                
+                party.PartyIdentification?.ForEach(id => 
+                    col.Item().Mono("Party ID", id.Id?.Value));
+                
+                if (party.PostalAddress != null) 
+                    col.Item().Address(party.PostalAddress);
+                
                 if (party.Contact != null)
                 {
-                    col.Item().Element(c => c.Field("Contact Name", party.Contact.Name?.Value));
-                    col.Item().Element(c => c.Mono("Telephone", party.Contact.Telephone?.Value));
-                    col.Item().Element(c => c.Mono("Email", party.Contact.ElectronicMail?.Value));
+                    col.Item().Field("Contact Name", party.Contact.Name?.Value);
+                    col.Item().Mono("Telephone", party.Contact.Telephone?.Value);
+                    col.Item().Mono("Email", party.Contact.ElectronicMail?.Value);
                 }
             });
+        }
         return container;
     }
 
     public static IContainer Address(this IContainer container, AddressType? address)
     {
         if (address != null)
+        {
             container.Column(col =>
             {
                 address.StreetName?.Value?.Let(v => col.Item().Text(v));
@@ -323,6 +360,7 @@ public static class UblDocumentExtensions
                 address.PostalZone?.Value?.Let(v => col.Item().Text(v));
                 address.Country?.IdentificationCode?.Value?.Let(v => col.Item().Text(v));
             });
+        }
         return container;
     }
 
@@ -331,11 +369,11 @@ public static class UblDocumentExtensions
     {
         container.Column(col =>
         {
-            col.Item().Element(c => c.Mono("Invoice Number", invoice.Id?.Value));
-            col.Item().Element(c => c.Date("Issue Date", invoice.IssueDate?.Value));
-            col.Item().Element(c => c.Date("Due Date", invoice.DueDate?.Value));
-            invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Element(c => c.Field("Payment Terms", note.Value))));
-            col.Item().Element(c => c.Mono("Currency", invoice.DocumentCurrencyCode?.Value));
+            col.Item().Mono("Invoice Number", invoice.Id?.Value);
+            col.Item().Date("Issue Date", invoice.IssueDate?.Value);
+            col.Item().Date("Due Date", invoice.DueDate?.Value);
+            invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Field("Payment Terms", note.Value)));
+            col.Item().Mono("Currency", invoice.DocumentCurrencyCode?.Value);
         });
         return container;
     }
@@ -344,18 +382,24 @@ public static class UblDocumentExtensions
     {
         container.Column(col =>
         {
-            col.Item().Element(c => c.Money("Line Extension Amount", invoice.LegalMonetaryTotal?.LineExtensionAmount?.Value, invoice.DocumentCurrencyCode?.Value));
-            col.Item().Element(c => c.Money("Tax Exclusive Amount", invoice.LegalMonetaryTotal?.TaxExclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value));
-            col.Item().Element(c => c.Money("Tax Inclusive Amount", invoice.LegalMonetaryTotal?.TaxInclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value));
-            col.Item().Element(c => c.Money("Payable Amount", invoice.LegalMonetaryTotal?.PayableAmount?.Value, invoice.DocumentCurrencyCode?.Value));
-            invoice.TaxTotal?.ForEach(tax => col.Item().Element(c => c.Money("Tax Amount", tax.TaxAmount?.Value, invoice.DocumentCurrencyCode?.Value)));
+            col.Item().Money("Line Extension Amount", invoice.LegalMonetaryTotal?.LineExtensionAmount?.Value, invoice.DocumentCurrencyCode?.Value);
+            col.Item().Money("Tax Exclusive Amount", invoice.LegalMonetaryTotal?.TaxExclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value);
+            col.Item().Money("Tax Inclusive Amount", invoice.LegalMonetaryTotal?.TaxInclusiveAmount?.Value, invoice.DocumentCurrencyCode?.Value);
+            col.Item().Money("Payable Amount", invoice.LegalMonetaryTotal?.PayableAmount?.Value, invoice.DocumentCurrencyCode?.Value);
+            invoice.TaxTotal?.ForEach(tax => col.Item().Money("Tax Amount", tax.TaxAmount?.Value, invoice.DocumentCurrencyCode?.Value));
         });
         return container;
     }
 
     public static IContainer Notes(this IContainer container, InvoiceType invoice)
     {
-        if (invoice.Note?.Count > 0) container.Column(col => { invoice.Note.ForEach(note => col.Item().Text(note.Value)); });
+        if (invoice.Note?.Count > 0) 
+        {
+            container.Column(col =>
+            {
+                invoice.Note.ForEach(note => col.Item().Text(note.Value));
+            });
+        }
         return container;
     }
 
@@ -363,10 +407,10 @@ public static class UblDocumentExtensions
     {
         container.Column(col =>
         {
-            col.Item().Element(c => c.Mono("Invoice Number", invoice.Id?.Value));
-            col.Item().Element(c => c.Date("Issue Date", invoice.IssueDate?.Value));
-            col.Item().Element(c => c.Field("Line Item Count", invoice.InvoiceLine?.Count.ToString() ?? "0"));
-            invoice.AdditionalDocumentReference?.ForEach(doc => col.Item().Element(c => c.Mono("Document Reference", doc.Id?.Value)));
+            col.Item().Mono("Invoice Number", invoice.Id?.Value);
+            col.Item().Date("Issue Date", invoice.IssueDate?.Value);
+            col.Item().Field("Line Item Count", invoice.InvoiceLine?.Count.ToString() ?? "0");
+            invoice.AdditionalDocumentReference?.ForEach(doc => col.Item().Mono("Document Reference", doc.Id?.Value));
         });
         return container;
     }
@@ -375,36 +419,38 @@ public static class UblDocumentExtensions
     public static IContainer InvoiceTable(this IContainer container, InvoiceType invoice, RenderContext context)
     {
         if (invoice.InvoiceLine?.Count > 0)
-            container.Column(col =>
+        {
+            container.Table(table =>
             {
-                col.Item().Table(table =>
+                table.ColumnsDefinition(columns =>
                 {
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.RelativeColumn(0.5f);
-                        columns.RelativeColumn(1.5f);
-                        columns.RelativeColumn(4.0f);
-                        columns.RelativeColumn();
-                        columns.RelativeColumn();
-                        columns.RelativeColumn();
-                        columns.RelativeColumn();
-                        columns.RelativeColumn(0.8f);
-                    });
-                    table.Header(header =>
-                    {
-                        header.Cell().Element(HeaderCellStyle).AlignLeft().Text("#");
-                        header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Artikkelnummer");
-                        header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Beskrivelse");
-                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Enhetspris");
-                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Antall Enhet");
-                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva");
-                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Netto");
-                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva %");
-                    });
-                    invoice.InvoiceLine.ForEach((line, index) => table.AddLine(line, index + 1, context));
+                    columns.RelativeColumn(0.5f);
+                    columns.RelativeColumn(1.5f);
+                    columns.RelativeColumn(4.0f);
+                    columns.RelativeColumn();
+                    columns.RelativeColumn();
+                    columns.RelativeColumn();
+                    columns.RelativeColumn();
+                    columns.RelativeColumn(0.8f);
                 });
+                table.Header(header =>
+                {
+                    header.Cell().Element(HeaderCellStyle).AlignLeft().Text("#");
+                    header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Artikkelnummer");
+                    header.Cell().Element(HeaderCellStyle).AlignLeft().Text("Beskrivelse");
+                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("Enhetspris");
+                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("Antall Enhet");
+                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva");
+                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("Netto");
+                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("Mva %");
+                });
+                invoice.InvoiceLine.ForEach((line, index) => table.AddLine(line, index + 1, context));
             });
-        else container.Text("No line items available").FontColor(Colors.Grey.Medium);
+        }
+        else 
+        {
+            container.Text("No line items available").FontColor(Colors.Grey.Medium);
+        }
         return container;
     }
 
@@ -484,22 +530,22 @@ public class LineDetailsComponent(InvoiceLineType? line, string? currencyCode) :
                 row.RelativeItem().Column(left =>
                 {
                     left.Item().Text("Item Details").Bold().FontColor(Colors.Blue.Darken2);
-                    line.Item?.SellersItemIdentification?.Id?.Value?.Let(v => left.Item().Field("SellersItemIdentification", v));
-                    line.Item?.StandardItemIdentification?.Id?.Value?.Let(v => left.Item().Field("StandardItemIdentification", v));
-                    line.Item?.Name?.Value?.Let(v => left.Item().Field("Item Name", v));
+                    line.Item?.SellersItemIdentification?.Id?.Value?.Let(v => left.Item().Element(c => c.Field("SellersItemIdentification", v)));
+                    line.Item?.StandardItemIdentification?.Id?.Value?.Let(v => left.Item().Element(c => c.Field("StandardItemIdentification", v)));
+                    line.Item?.Name?.Value?.Let(v => left.Item().Element(c => c.Field("Item Name", v)));
                 });
                 row.RelativeItem().Column(middle =>
                 {
                     middle.Item().Text("Period & References").Bold().FontColor(Colors.Blue.Darken2);
                     line.InvoicePeriod?.ForEach(period =>
                     {
-                        middle.Item().Date("Start Date", period.StartDate?.Value);
-                        middle.Item().Date("End Date", period.EndDate?.Value);
+                        middle.Item().Element(c => c.Date("Start Date", period.StartDate?.Value));
+                        middle.Item().Element(c => c.Date("End Date", period.EndDate?.Value));
                     });
                     line.DocumentReference?.ForEach(doc =>
                     {
-                        middle.Item().Mono("Document ID", doc.Id?.Value);
-                        middle.Item().Mono("Document Type", doc.DocumentTypeCode?.Value);
+                        middle.Item().Element(c => c.Mono("Document ID", doc.Id?.Value));
+                        middle.Item().Element(c => c.Mono("Document Type", doc.DocumentTypeCode?.Value));
                     });
                 });
                 row.RelativeItem().Column(right =>
@@ -507,15 +553,15 @@ public class LineDetailsComponent(InvoiceLineType? line, string? currencyCode) :
                     right.Item().Text("Tax & Charges").Bold().FontColor(Colors.Blue.Darken2);
                     line.Item?.ClassifiedTaxCategory?.ForEach(tax =>
                     {
-                        right.Item().Mono("Tax ID", tax.Id?.Value);
-                        right.Item().Percent("Tax Rate", tax.Percent?.Value);
-                        right.Item().Mono("Tax Scheme", tax.TaxScheme?.Id?.Value);
+                        right.Item().Element(c => c.Mono("Tax ID", tax.Id?.Value));
+                        right.Item().Element(c => c.Percent("Tax Rate", tax.Percent?.Value));
+                        right.Item().Element(c => c.Mono("Tax Scheme", tax.TaxScheme?.Id?.Value));
                     });
                     line.AllowanceCharge?.ForEach(allowance =>
                     {
-                        right.Item().Field("Charge Indicator", allowance.ChargeIndicator.ToString());
-                        right.Item().Money("Amount", allowance.Amount?.Value, currencyCode);
-                        right.Item().Money("Base Amount", allowance.BaseAmount?.Value, currencyCode);
+                        right.Item().Element(c => c.Field("Charge Indicator", allowance.ChargeIndicator.Value.ToString()));
+                        right.Item().Element(c => c.Money("Amount", allowance.Amount?.Value, currencyCode));
+                        right.Item().Element(c => c.Money("Base Amount", allowance.BaseAmount?.Value, currencyCode));
                     });
                 });
             });
