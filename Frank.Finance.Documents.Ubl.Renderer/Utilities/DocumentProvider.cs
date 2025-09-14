@@ -9,12 +9,12 @@ namespace Frank.Finance.Documents.Ubl.Renderer.Utilities;
 
 public static class DocumentProvider
 {
-    public static async Task<UblDocument> GetUblDocumentAsync(string baseDirectory, ITranslator translator)
+    public static async Task<UblDocument> GetUblDocumentAsync(string baseDirectory, ITranslator translator, int? forcedDocumentType = null)
     {
         RenderContext renderContext;
         var diceRoll = new Random().Next(1, 4);
 
-        switch (diceRoll)
+        switch (forcedDocumentType ?? diceRoll)
         {
             case 1:
                 Console.WriteLine("Rendering Invoice...");
