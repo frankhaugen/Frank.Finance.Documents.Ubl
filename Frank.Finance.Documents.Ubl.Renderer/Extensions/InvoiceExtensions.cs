@@ -32,9 +32,22 @@ public static class InvoiceExtensions
             col.Item().Field("Accounting Cost", invoice.AccountingCost?.Value);
             col.Item().Field("Line Count", invoice.LineCountNumeric?.Value.ToString());
             col.Item().Mono("Buyer Reference", invoice.BuyerReference?.Value);
-            invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Field("Payment Terms", note.Value)));
-            invoice.AdditionalDocumentReference?.ForEach(doc => col.Item().Mono("Additional Document Reference", doc.Id?.Value));
+            invoice.Signature?.ForEach(signature => col.Item().Mono("Signature ID", signature.Id?.Value));
+            col.Spacing(5);
+            col.Item().SectionHeading("DOCUMENT REFERENCES");
             invoice.AdditionalDocumentReferenceSpecified.Let(specified => col.Item().Field("Additional Document Reference Specified", specified.ToString()));
+            invoice.AdditionalDocumentReference?.ForEach(doc => col.Item().Mono(doc.DocumentDescription.Select(desc => desc.Value).Join(" "), doc.Id?.Value));
+            invoice.ContractDocumentReference?.ForEach(doc => col.Item().Mono("Contract Document Reference", doc.Id?.Value));
+            invoice.ProjectReference?.ForEach(proj => col.Item().Mono("Project Reference", proj.Id?.Value));
+            invoice.OrderReference?.Let(orderRef => col.Item().Mono("Order Reference", orderRef.Id?.Value));
+            invoice.BillingReference?.ForEach(doc => col.Item().Mono("Billing Reference", doc.InvoiceDocumentReference?.Id?.Value));
+            invoice.DespatchDocumentReference?.ForEach(doc => col.Item().Mono(doc.DocumentDescription.Select(desc => desc.Value).Join(" "), doc.Id?.Value));
+            invoice.ReceiptDocumentReference?.ForEach(doc => col.Item().Mono(doc.DocumentDescription.Select(desc => desc.Value).Join(" "), doc.Id?.Value));
+            invoice.StatementDocumentReference?.ForEach(doc => col.Item().Mono(doc.DocumentDescription.Select(desc => desc.Value).Join(" "), doc.Id?.Value));
+            col.Spacing(5);
+            col.Item().SectionHeading("PAYMENT TERMS");
+            // invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Field("Payment Terms", note.Value)));
+            invoice.PaymentTerms?.ForEach(term => col.Item().Field(term.Id?.Value ?? "", term.Note?.Select(note => note.Value).Join(", ")));
         });
         return container;
     }
