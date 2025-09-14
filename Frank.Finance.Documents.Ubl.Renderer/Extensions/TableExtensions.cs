@@ -74,7 +74,7 @@ public static class TableExtensions
 
     public static IContainer ItemCellStyle(this IContainer container)
     {
-        return container.PaddingVertical(3).PaddingHorizontal(4);
+        return container.PaddingVertical(3).PaddingHorizontal(2);
     }
 
     public static IContainer HeaderCellStyle(this IContainer container)

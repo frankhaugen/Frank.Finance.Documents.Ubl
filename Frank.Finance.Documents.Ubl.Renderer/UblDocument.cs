@@ -50,18 +50,9 @@ public class UblDocument(RenderContext context) : IDocument
         container.Column(col =>
         {
             col.Item().Element(ComposeThreeColumnHeader);
-            col.Item().Element(ComposeInvoicePeriodsSection);
-            col.Item().Element(ComposePartiesSection);
-            col.Item().Element(ComposeDeliverySection);
-            col.Item().Element(ComposeDeliveryTermsSection);
-            col.Item().Element(ComposePaymentMeansSection);
-            col.Item().Element(ComposePaymentTermsSection);
-            col.Item().Element(ComposePrepaidPaymentsSection);
-            col.Item().Element(ComposeAllowanceChargesSection);
             col.Item().Element(ComposeNotesSection);
             col.Item().Element(ComposeTotalsSection);
             col.Item().Element(ComposeLineItemsTable);
-            col.Item().Element(ComposeSignaturesSection);
             col.Item().Element(ComposeSummarySection);
         });
     }
@@ -74,16 +65,25 @@ public class UblDocument(RenderContext context) : IDocument
             {
                 col.Item().SectionHeading("SUPPLIER");
                 col.Item().Party(context.Invoice?.AccountingSupplierParty?.Party);
+                col.Item().Element(ComposeSignaturesSection);
             });
             row.RelativeItem().Column(col => 
             {
                 col.Item().SectionHeading("CUSTOMER");
                 col.Item().Party(context.Invoice?.AccountingCustomerParty?.Party);
+                col.Item().Element(ComposeDeliverySection);
+                col.Item().Element(ComposePartiesSection);
+                col.Item().Element(ComposeDeliveryTermsSection);
+                col.Item().Element(ComposeAllowanceChargesSection);
             });
             row.RelativeItem().Column(col => 
             {
                 col.Item().SectionHeading("INVOICE DETAILS");
                 col.Item().InvoiceDetails(context.Invoice!);
+                col.Item().Element(ComposeInvoicePeriodsSection);
+                col.Item().Element(ComposePaymentMeansSection);
+                col.Item().Element(ComposePaymentTermsSection);
+                col.Item().Element(ComposePrepaidPaymentsSection);
             });
         });
     }

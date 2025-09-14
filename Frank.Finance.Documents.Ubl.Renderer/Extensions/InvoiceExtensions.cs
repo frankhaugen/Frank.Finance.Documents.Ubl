@@ -47,7 +47,7 @@ public static class InvoiceExtensions
             col.Spacing(5);
             col.Item().SectionHeading("PAYMENT TERMS");
             // invoice.PaymentTerms?.ForEach(term => term.Note?.ForEach(note => col.Item().Field("Payment Terms", note.Value)));
-            invoice.PaymentTerms?.ForEach(term => col.Item().Field(term.Id?.Value ?? "", term.Note?.Select(note => note.Value).Join(", ")));
+            invoice.PaymentTerms?.ForEach(term => col.Item().Field(term.PaymentMeansId.Select(id => id.Value).Join(", "), term.Note?.Select(note => note.Value).Join(", ")));
         });
         return container;
     }
