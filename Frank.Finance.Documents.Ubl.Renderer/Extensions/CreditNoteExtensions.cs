@@ -119,4 +119,199 @@ public static class CreditNoteExtensions
         });
         return container;
     }
+
+    public static IContainer CreditNoteSignatures(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.Signature?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("SIGNATURES");
+                creditNote.Signature.ForEach(signature => 
+                {
+                    col.Item().Field("ID", signature.Id?.Value);
+                    col.Item().Field("Signature Method", signature.SignatureMethod?.Value);
+                    col.Item().Field("Note", signature.Note?.Select(note => note.Value).Join(", "));
+                    col.Item().Date("Validation Date", signature.ValidationDate?.Value);
+                    col.Item().Field("Validation Time", signature.ValidationTime?.Value.ToString());
+                    col.Item().Field("Validator ID", signature.ValidatorId?.Value);
+                    col.Item().Field("Canonicalization Method", signature.CanonicalizationMethod?.Value);
+                });
+            });
+        }
+        return container;
+    }
+
+    public static IContainer CreditNotePeriods(this IContainer container, CreditNoteType creditNote)
+    {
+        // CreditNote doesn't have CreditNotePeriod property
+        return container;
+    }
+
+    public static IContainer CreditNoteParties(this IContainer container, CreditNoteType creditNote)
+    {
+        container.Column(col =>
+        {
+            col.Item().SectionHeading("PARTIES");
+            
+            // Payee Party
+            if (creditNote.PayeeParty != null)
+            {
+                col.Item().Text("Payee Party").Bold();
+                col.Item().Party(creditNote.PayeeParty);
+            }
+            
+            // Buyer Customer Party
+            if (creditNote.BuyerCustomerParty != null)
+            {
+                col.Item().Text("Buyer Customer Party").Bold();
+                col.Item().Party(creditNote.BuyerCustomerParty.Party);
+            }
+            
+            // Seller Supplier Party
+            if (creditNote.SellerSupplierParty != null)
+            {
+                col.Item().Text("Seller Supplier Party").Bold();
+                col.Item().Party(creditNote.SellerSupplierParty.Party);
+            }
+            
+            // Tax Representative Party
+            if (creditNote.TaxRepresentativeParty != null)
+            {
+                col.Item().Text("Tax Representative Party").Bold();
+                col.Item().Party(creditNote.TaxRepresentativeParty);
+            }
+        });
+        return container;
+    }
+
+    public static IContainer CreditNoteDelivery(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.Delivery?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("DELIVERY INFORMATION");
+                creditNote.Delivery.ForEach(delivery => 
+                {
+                    col.Item().Date("Actual Delivery Date", delivery.ActualDeliveryDate?.Value);
+                    col.Item().Date("Actual Delivery Time", delivery.ActualDeliveryTime?.Value);
+                    col.Item().Field("Delivery ID", delivery.Id?.Value);
+                    col.Item().Field("Tracking ID", delivery.TrackingId?.Value);
+                    if (delivery.DeliveryAddress != null)
+                    {
+                        col.Item().Text("Delivery Address").Bold();
+                        col.Item().Address(delivery.DeliveryAddress);
+                    }
+                    if (delivery.DeliveryParty != null)
+                    {
+                        col.Item().Text("Delivery Party").Bold();
+                        col.Item().Party(delivery.DeliveryParty);
+                    }
+                });
+            });
+        }
+        return container;
+    }
+
+    public static IContainer CreditNoteDeliveryTerms(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.DeliveryTerms?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("DELIVERY TERMS");
+                creditNote.DeliveryTerms.ForEach(terms =>
+                {
+                    col.Item().Field("Special Terms", terms.SpecialTerms?.Select(term => term.Value).Join(", "));
+                    col.Item().Field("Loss Risk Responsibility Code", terms.LossRiskResponsibilityCode?.Value);
+                    col.Item().Field("Loss Risk", terms.LossRisk?.Select(risk => risk.Value).Join(", "));
+                    col.Item().Field("Amount", terms.Amount?.Value.ToString());
+                    col.Item().Field("Allowance Charge", terms.AllowanceCharge?.Amount?.Value.ToString());
+                    if (terms.DeliveryLocation?.Address != null)
+                    {
+                        col.Item().Text("Delivery Location").Bold();
+                        col.Item().Address(terms.DeliveryLocation.Address);
+                    }
+                });
+            });
+        }
+        return container;
+    }
+
+    public static IContainer CreditNotePaymentMeans(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.PaymentMeans?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("PAYMENT MEANS");
+                creditNote.PaymentMeans.ForEach(payment => 
+                {
+                    col.Item().Field("Payment Means Code", payment.PaymentMeansCode?.Value);
+                    col.Item().Date("Payment Due Date", payment.PaymentDueDate?.Value);
+                    col.Item().Field("Payment Channel Code", payment.PaymentChannelCode?.Value);
+                    col.Item().Field("Instruction ID", payment.InstructionId?.Value);
+                    col.Item().Field("Instruction Note", payment.InstructionNote?.Select(note => note.Value).Join(", "));
+                    col.Item().Field("Payment ID", payment.PaymentId?.Select(id => id.Value).Join(", "));
+                    if (payment.PayeeFinancialAccount != null)
+                    {
+                        col.Item().Text("Payee Financial Account").Bold();
+                        col.Item().Field("Account ID", payment.PayeeFinancialAccount.Id?.Value);
+                        col.Item().Field("Account Name", payment.PayeeFinancialAccount.Name?.Value);
+                        col.Item().Field("Account Type Code", payment.PayeeFinancialAccount.FinancialInstitutionBranch?.FinancialInstitution?.Name?.Value);
+                    }
+                });
+            });
+        }
+        return container;
+    }
+
+    public static IContainer CreditNotePaymentTerms(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.PaymentTerms?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("PAYMENT TERMS");
+                creditNote.PaymentTerms.ForEach(term => 
+                {
+                    col.Item().Field("Note", term.Note?.Select(note => note.Value).Join(", "));
+                    col.Item().Field("Penalty Surcharge Percent", term.PenaltySurchargePercent?.Value.ToString());
+                    col.Item().Field("Penalty Amount", term.PenaltyAmount?.Value.ToString());
+                });
+            });
+        }
+        return container;
+    }
+
+    public static IContainer CreditNotePrepaidPayments(this IContainer container, CreditNoteType creditNote)
+    {
+        // CreditNote doesn't have PrepaidPayment property
+        return container;
+    }
+
+    public static IContainer CreditNoteAllowanceCharges(this IContainer container, CreditNoteType creditNote)
+    {
+        if (creditNote.AllowanceCharge?.Count > 0)
+        {
+            container.Column(col =>
+            {
+                col.Item().SectionHeading("ALLOWANCE CHARGES");
+                creditNote.AllowanceCharge.ForEach(charge => 
+                {
+                    col.Item().Field("Charge Indicator", charge.ChargeIndicator?.Value.ToString());
+                    col.Item().Field("Allowance Charge Reason Code", charge.AllowanceChargeReasonCode?.Value);
+                    col.Item().Field("Allowance Charge Reason", charge.AllowanceChargeReason?.Select(reason => reason.Value).Join(", "));
+                    col.Item().Field("Multiplier Factor Numeric", charge.MultiplierFactorNumeric?.Value.ToString());
+                    col.Item().Field("Sequence Numeric", charge.SequenceNumeric?.Value.ToString());
+                    col.Item().Field("Amount", charge.Amount?.Value.ToString());
+                    col.Item().Field("Base Amount", charge.BaseAmount?.Value.ToString());
+                    col.Item().Field("Accounting Cost Code", charge.AccountingCostCode?.Value);
+                    col.Item().Field("Accounting Cost", charge.AccountingCost?.Value);
+                });
+            });
+        }
+        return container;
+    }
 }

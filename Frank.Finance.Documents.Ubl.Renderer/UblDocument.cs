@@ -187,80 +187,235 @@ public class UblDocument(RenderContext context) : IDocument
     {
         if (context.Invoice != null)
             container.InvoiceTable(context.Invoice, context);
-        // Note: CreditNote and Reminder line items would need their own table implementations
-        // For now, we'll skip them or use a generic approach
+        else if (context.CreditNote != null)
+            container.CreditNoteTable(context.CreditNote, context);
+        else if (context.Reminder != null)
+            container.ReminderTable(context.Reminder, context);
     }
 
     private void ComposeInvoicePeriodsSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().InvoicePeriods(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().InvoicePeriods(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNotePeriods(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderPeriods(context.Reminder);
+            });
+        }
     }
 
     private void ComposePartiesSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().Parties(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().Parties(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNoteParties(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderParties(context.Reminder);
+            });
+        }
     }
 
     private void ComposeDeliverySection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().Delivery(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().Delivery(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNoteDelivery(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderDelivery(context.Reminder);
+            });
+        }
     }
 
     private void ComposeDeliveryTermsSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().DeliveryTerms(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().DeliveryTerms(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNoteDeliveryTerms(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderDeliveryTerms(context.Reminder);
+            });
+        }
     }
 
     private void ComposePaymentMeansSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().PaymentMeans(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().PaymentMeans(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNotePaymentMeans(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderPaymentMeans(context.Reminder);
+            });
+        }
     }
 
     private void ComposePaymentTermsSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().PaymentTerms(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().PaymentTerms(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNotePaymentTerms(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderPaymentTerms(context.Reminder);
+            });
+        }
     }
 
     private void ComposePrepaidPaymentsSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().PrepaidPayments(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().PrepaidPayments(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNotePrepaidPayments(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderPrepaidPayments(context.Reminder);
+            });
+        }
     }
 
     private void ComposeAllowanceChargesSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().AllowanceCharges(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().AllowanceCharges(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNoteAllowanceCharges(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderAllowanceCharges(context.Reminder);
+            });
+        }
     }
 
     private void ComposeSignaturesSection(IContainer container)
     {
-        container.Column(col =>
+        if (context.Invoice != null)
         {
-            col.Item().Signatures(context.Invoice!);
-        });
+            container.Column(col =>
+            {
+                col.Item().Signatures(context.Invoice);
+            });
+        }
+        else if (context.CreditNote != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().CreditNoteSignatures(context.CreditNote);
+            });
+        }
+        else if (context.Reminder != null)
+        {
+            container.Column(col =>
+            {
+                col.Item().ReminderSignatures(context.Reminder);
+            });
+        }
     }
 
     private void ComposeSummarySection(IContainer container)
