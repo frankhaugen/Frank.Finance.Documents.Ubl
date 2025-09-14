@@ -50,9 +50,18 @@ public class UblDocument(RenderContext context) : IDocument
         container.Column(col =>
         {
             col.Item().Element(ComposeThreeColumnHeader);
+            col.Item().Element(ComposeInvoicePeriodsSection);
+            col.Item().Element(ComposePartiesSection);
+            col.Item().Element(ComposeDeliverySection);
+            col.Item().Element(ComposeDeliveryTermsSection);
+            col.Item().Element(ComposePaymentMeansSection);
+            col.Item().Element(ComposePaymentTermsSection);
+            col.Item().Element(ComposePrepaidPaymentsSection);
+            col.Item().Element(ComposeAllowanceChargesSection);
             col.Item().Element(ComposeNotesSection);
             col.Item().Element(ComposeTotalsSection);
             col.Item().Element(ComposeLineItemsTable);
+            col.Item().Element(ComposeSignaturesSection);
             col.Item().Element(ComposeSummarySection);
         });
     }
@@ -103,6 +112,78 @@ public class UblDocument(RenderContext context) : IDocument
         {
             col.Item().SectionHeading("LINE ITEMS");
             col.Item().InvoiceTable(context.Invoice!, context);
+        });
+    }
+
+    private void ComposeInvoicePeriodsSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().InvoicePeriods(context.Invoice!);
+        });
+    }
+
+    private void ComposePartiesSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().Parties(context.Invoice!);
+        });
+    }
+
+    private void ComposeDeliverySection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().Delivery(context.Invoice!);
+        });
+    }
+
+    private void ComposeDeliveryTermsSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().DeliveryTerms(context.Invoice!);
+        });
+    }
+
+    private void ComposePaymentMeansSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().PaymentMeans(context.Invoice!);
+        });
+    }
+
+    private void ComposePaymentTermsSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().PaymentTerms(context.Invoice!);
+        });
+    }
+
+    private void ComposePrepaidPaymentsSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().PrepaidPayments(context.Invoice!);
+        });
+    }
+
+    private void ComposeAllowanceChargesSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().AllowanceCharges(context.Invoice!);
+        });
+    }
+
+    private void ComposeSignaturesSection(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().Signatures(context.Invoice!);
         });
     }
 

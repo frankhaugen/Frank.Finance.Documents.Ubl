@@ -17,4 +17,9 @@ public static class CollectionExtensions
     {
         if (value != null) action(value);
     }
+
+    public static string Join(this IEnumerable<string?> items, string separator)
+    {
+        return string.Join(separator, items.Where(item => item != null));
+    }
 }
