@@ -36,17 +36,41 @@ public class UblDocument(RenderContext context) : IDocument
         container
             .Column(column =>
             {
-                column.Item().Text("INVOICE").Bold().FontColor(Colors.Blue.Darken2);
+                // Determine document type and get translated title
+                string documentTitle = GetDocumentTitle();
+                column.Item().Text(documentTitle).Bold().FontColor(Colors.Blue.Darken2);
 
-                if (context.Invoice?.InvoiceTypeCode?.Value != null)
-                    column.Item().Text($" - {context.Invoice.InvoiceTypeCode.Value}")
+                // Add document type code if available
+                string? typeCode = GetDocumentTypeCode();
+                if (typeCode != null)
+                    column.Item().Text($" - {typeCode}")
                         .FontColor(Colors.Grey.Darken1);
             });
     }
 
+    private string GetDocumentTitle()
+    {
+        if (context.Invoice != null)
+            return context.Translator.TranslateAsync("DOCUMENT_TYPE_INVOICE", context.Language).Result;
+        if (context.CreditNote != null)
+            return context.Translator.TranslateAsync("DOCUMENT_TYPE_CREDIT_NOTE", context.Language).Result;
+        if (context.Reminder != null)
+            return context.Translator.TranslateAsync("DOCUMENT_TYPE_REMINDER", context.Language).Result;
+        
+        return "DOCUMENT";
+    }
+
+    private string? GetDocumentTypeCode()
+    {
+        return context.Invoice?.InvoiceTypeCode?.Value ?? 
+               context.CreditNote?.CreditNoteTypeCode?.Value ?? 
+               context.Reminder?.ReminderTypeCode?.Value;
+    }
+
     private void ComposeContent(IContainer container)
     {
-        if (context.Invoice == null) return;
+        if (context.Invoice == null && context.CreditNote == null && context.Reminder == null) return;
+        
         container.Column(col =>
         {
             col.Item().Element(ComposeThreeColumnHeader);
@@ -63,14 +87,14 @@ public class UblDocument(RenderContext context) : IDocument
         {
             row.RelativeItem().Column(col => 
             {
-                col.Item().SectionHeading("SUPPLIER");
-                col.Item().Party(context.Invoice?.AccountingSupplierParty?.Party);
+                col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_SUPPLIER");
+                col.Item().Party(GetSupplierParty());
                 col.Item().Element(ComposeSignaturesSection);
             });
             row.RelativeItem().Column(col => 
             {
-                col.Item().SectionHeading("CUSTOMER");
-                col.Item().Party(context.Invoice?.AccountingCustomerParty?.Party);
+                col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_CUSTOMER");
+                col.Item().Party(GetCustomerParty());
                 col.Item().Element(ComposeDeliverySection);
                 col.Item().Element(ComposePartiesSection);
                 col.Item().Element(ComposeDeliveryTermsSection);
@@ -78,8 +102,8 @@ public class UblDocument(RenderContext context) : IDocument
             });
             row.RelativeItem().Column(col => 
             {
-                col.Item().SectionHeading("INVOICE DETAILS");
-                col.Item().InvoiceDetails(context.Invoice!);
+                col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_DETAILS");
+                col.Item().Element(ComposeDocumentDetails);
                 col.Item().Element(ComposeInvoicePeriodsSection);
                 col.Item().Element(ComposePaymentMeansSection);
                 col.Item().Element(ComposePaymentTermsSection);
@@ -88,31 +112,83 @@ public class UblDocument(RenderContext context) : IDocument
         });
     }
 
+    private Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents.PartyType? GetSupplierParty()
+    {
+        return context.Invoice?.AccountingSupplierParty?.Party ?? 
+               context.CreditNote?.AccountingSupplierParty?.Party ?? 
+               context.Reminder?.AccountingSupplierParty?.Party;
+    }
+
+    private Frank.Finance.Documents.Ubl.CommonAggregateComponentsCommonAggregateComponents.PartyType? GetCustomerParty()
+    {
+        return context.Invoice?.AccountingCustomerParty?.Party ?? 
+               context.CreditNote?.AccountingCustomerParty?.Party ?? 
+               context.Reminder?.AccountingCustomerParty?.Party;
+    }
+
+    private void ComposeDocumentDetails(IContainer container)
+    {
+        if (context.Invoice != null)
+            container.InvoiceDetails(context.Invoice);
+        else if (context.CreditNote != null)
+            container.CreditNoteDetails(context.CreditNote);
+        else if (context.Reminder != null)
+            container.ReminderDetails(context.Reminder);
+    }
+
     private void ComposeNotesSection(IContainer container)
     {
         container.Column(col =>
         {
-            col.Item().SectionHeading("NOTES");
-            col.Item().Notes(context.Invoice!);
+            col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_NOTES");
+            col.Item().Element(ComposeDocumentNotes);
         });
+    }
+
+    private void ComposeDocumentNotes(IContainer container)
+    {
+        if (context.Invoice != null)
+            container.Notes(context.Invoice);
+        else if (context.CreditNote != null)
+            container.CreditNoteNotes(context.CreditNote);
+        else if (context.Reminder != null)
+            container.ReminderNotes(context.Reminder);
     }
 
     private void ComposeTotalsSection(IContainer container)
     {
         container.Column(col =>
         {
-            col.Item().SectionHeading("TOTALS");
-            col.Item().Totals(context.Invoice!);
+            col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_TOTALS");
+            col.Item().Element(ComposeDocumentTotals);
         });
+    }
+
+    private void ComposeDocumentTotals(IContainer container)
+    {
+        if (context.Invoice != null)
+            container.Totals(context.Invoice);
+        else if (context.CreditNote != null)
+            container.CreditNoteTotals(context.CreditNote);
+        else if (context.Reminder != null)
+            container.ReminderTotals(context.Reminder);
     }
 
     private void ComposeLineItemsTable(IContainer container)
     {
         container.Column(col =>
         {
-            col.Item().SectionHeading("LINE ITEMS");
-            col.Item().InvoiceTable(context.Invoice!, context);
+            col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_LINE_ITEMS");
+            col.Item().Element(ComposeDocumentLineItems);
         });
+    }
+
+    private void ComposeDocumentLineItems(IContainer container)
+    {
+        if (context.Invoice != null)
+            container.InvoiceTable(context.Invoice, context);
+        // Note: CreditNote and Reminder line items would need their own table implementations
+        // For now, we'll skip them or use a generic approach
     }
 
     private void ComposeInvoicePeriodsSection(IContainer container)
@@ -191,9 +267,19 @@ public class UblDocument(RenderContext context) : IDocument
     {
         container.Column(col =>
         {
-            col.Item().SectionHeading("SUMMARY");
-            col.Item().Summary(context.Invoice!);
+            col.Item().TranslatedSectionHeading(context.Translator, context.Language, "HEADER_SUMMARY");
+            col.Item().Element(ComposeDocumentSummary);
         });
+    }
+
+    private void ComposeDocumentSummary(IContainer container)
+    {
+        if (context.Invoice != null)
+            container.Summary(context.Invoice);
+        else if (context.CreditNote != null)
+            container.CreditNoteSummary(context.CreditNote);
+        else if (context.Reminder != null)
+            container.ReminderSummary(context.Reminder);
     }
 
     private void ComposeFooter(IContainer container)
@@ -202,7 +288,8 @@ public class UblDocument(RenderContext context) : IDocument
             .AlignCenter()
             .Text(x =>
             {
-                x.Span("Page ");
+                var pageText = context.Translator.TranslateAsync("PAGE_FOOTER", context.Language).Result;
+                x.Span(pageText.Replace("{0}", "").Replace("{1}", ""));
                 x.CurrentPageNumber();
                 x.Span(" of ");
                 x.TotalPages();

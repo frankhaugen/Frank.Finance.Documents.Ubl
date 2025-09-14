@@ -16,10 +16,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Norwegian-example-1.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <None Update="Files\*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Remove="HeaderLayout.png" />
     </ItemGroup>
 
 </Project>
