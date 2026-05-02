@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Frank.Finance.Documents.Ubl.Renderer/Frank.Finance.Documents.Ubl.Renderer.csproj" />
+  <Project Path="Frank.Finance.Documents.Ubl.Tests/Frank.Finance.Documents.Ubl.Tests.csproj" />
+  <Project Path="Frank.Finance.Documents.Ubl/Frank.Finance.Documents.Ubl.csproj" />
+</Solution>
